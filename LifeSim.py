@@ -3,25 +3,22 @@ import time
 
 from class1 import Creature
 
-# tried arrays, they suck
-# lists are just too cool
-
 # Proper clear doesn't want to work, used the 'print a lot of lines' solution:
 # Works but meh, on a bigger map it will be better
 # Random doesn't want to work, no idea what is wrong, it worked on the monopoly one:
 # My dumb ass was adding onto the list, but displaying only the first generation
 # so great, made my first memory leak...
-MapDimensions = 10
-Map = [[None] * MapDimensions] * MapDimensions
+MapDimensions = 15
+Map = [[None for col in range(MapDimensions)] for row in range(MapDimensions)]
 CreatureList = []
-# add creature id somewhere in the code later on
-# PRIORITY - random restart seed
-# CURRENT - add replacing of maps Nulls when creature is not present. Make a check on Out Of Bounds error when wanted coordinates are OoB
+# CURRENT   Implement new features - predators eating prey, prey eating plants, plants randomly spawning
+# PRIORITY  or rework some old stuff
+# Potential methods - divide predators and prey into subclasses of Creature
 
 clearConsole = lambda: print('\n' * 150)
 
-# do this --> https://stackoverflow.com/questions/19326004/access-a-function-variable-outside-the-function-without-using-global
-
+# https://stackoverflow.com/questions/19326004/access-a-function-variable-outside-the-function-without-using-global
+# do this ^^^^
 
 
 def GenerateFirstMapGeneration():
@@ -31,22 +28,34 @@ def GenerateFirstMapGeneration():
 
     if Map.__len__ != 0:
         Map.clear()
-        Map = [[None] * MapDimensions] * MapDimensions  # this may not be necessary if I will make this solely for the first map generation
+        Map = [[None for col in range(MapDimensions)] for row in range(MapDimensions)]
+        # this may not be necessary if I will make this solely for the first map generation
 
     for i in range(CreatureList.__len__()):
         while True:
-            CreatureList[i].position_x = random.randrange(10)
-            CreatureList[i].position_y = random.randrange(10) # do it using the creature position instead of map field
+            CreatureList[i].position_x = random.randint(0, 9)
+            CreatureList[i].position_y = random.randint(0, 9)  # do it using the creature position instead of map field
 
-            # If it is something else than a None field, aka creature re-roll positions, if not break and put it on the map
-            if type(Map[CreatureList[i].position_x][CreatureList[i].position_y]) is not type(None):
+            # If it is something else than a None field, aka creature
+            # re-roll positions, if not break and put it on the map
+            if Map[CreatureList[i].position_x][CreatureList[i].position_y] is not None:
                 continue
             else:
                 break
-            # ^ why did i implement this twice, but in a different way?
-
+            # ^ why did I implement this twice, but in a different way?
         Map[CreatureList[i].position_x][CreatureList[i].position_y] = CreatureList[i]
 
+
+def UpdateMap():
+    global Map
+
+    if Map.__len__ != 0:  # this is dumb
+        Map.clear()
+        Map = [[None for col in range(MapDimensions)] for row in range(MapDimensions)]
+
+    for i in range(CreatureList.__len__()):
+        # No checks are needed here, they are made by the creature
+        Map[CreatureList[i].position_x][CreatureList[i].position_y] = CreatureList[i]
 
 
 def DisplayMap():
@@ -54,18 +63,18 @@ def DisplayMap():
         print(f"{col}", end=" ")
         for row in range(MapDimensions):
             # Big problem/security flaw here. What if the error will be a valid one?
+            # Re-do this with a check that bools only when it is a creature type | in not None might just work
             try:
                 if Map[col][row].type == "Prey":
                     print("X", end=" ")
-                if Map[col][row].type == "Predator":
+                elif Map[col][row].type == "Predator":
                     print("Z", end=" ")
-            except:
+            except ReferenceError:  # find out what the error actually is called - May be reference error
                 print(" ", end=" ")
         print()
 
 
-
-def GenerateCreatures(CreatureIdOuter):
+def GenerateCreatures(creature_id):
     while True:
         pray_amount = int(input("Amount of pray? "))
         predator_amount = int(input("Amount of predators? "))
@@ -75,7 +84,7 @@ def GenerateCreatures(CreatureIdOuter):
             continue
         if pray_amount > 0 or predator_amount > 0:
             break
-    GenerateCreatures.CreatureId = CreatureIdOuter
+    GenerateCreatures.CreatureId = creature_id
 
     for i in range(pray_amount):
         CreatureList.append(Creature("Prey", False, GenerateCreatures.CreatureId))
@@ -83,12 +92,21 @@ def GenerateCreatures(CreatureIdOuter):
 
 
 def CreatureActions():
-    #CreatureList = sorted(CreatureList, key=lambda item: item.id)  # is this actually necessary
+    # CreatureList = sorted(CreatureList, key=lambda item: item.id)  # is this actually necessary or wanted
     for i in range(CreatureList.__len__()):
-        CreatureList[i].move(random.randrange(5), CreatureList, Map)
+        CreatureList[i].move(random.randint(0, 4), CreatureList, Map)
         Map[CreatureList[i].position_x][CreatureList[i].position_y] = CreatureList[i]
 
 
+def EndPrint(generation):
+    string = "  "
+    bridge_line = ""
+    for i in range(Map.__len__()):
+        string = string + str(i) + " "
+        bridge_line = "_"*string.__len__()
+    print(bridge_line)
+    print(generation)
+    print(string)
 
 # how I can do this,
 # do a list of object creatures
@@ -104,18 +122,18 @@ def CreatureActions():
 
 test_iterator = 0
 CreatureIdOuter = 0
+
+GenerateFirstMapGeneration()
+GenerateCreatures(CreatureIdOuter)  # generate creatures before going into the game loop
 while True:
-    random.seed(time.localtime())
     test_iterator += 1
-    if test_iterator == 100:
-        break
-    GenerateCreatures(CreatureIdOuter)
     CreatureIdOuter = GenerateCreatures.CreatureId  # gets out the creature id from the function
-    # GenerateCreatures.CreatureId = GenerateCreatures.CreatureId + 100  # THIS works, but does it work how I think it works?
+    # GenerateCreatures.CreatureId = GenerateCreatures.CreatureId + 100
+    # ^THIS works, but does it work how I think it works?
     # GenerateCreatures(GenerateCreatures.CreatureId)
-    GenerateFirstMapGeneration()
+    CreatureActions()
+    UpdateMap()
     DisplayMap()
-    # CreatureActions()
-    # DisplayMap()
     time.sleep(1)
-    clearConsole()
+    EndPrint(test_iterator)
+    # clearConsole()
