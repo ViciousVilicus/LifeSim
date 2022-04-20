@@ -69,7 +69,7 @@ def DisplayMap():
                     print("X", end=" ")
                 elif Map[col][row].type == "Predator":
                     print("Z", end=" ")
-            except ReferenceError:  # find out what the error actually is called - May be reference error
+            except:  # find out what the error actually is called - May be reference error
                 print(" ", end=" ")
         print()
 
@@ -94,7 +94,7 @@ def GenerateCreatures(creature_id):
 def CreatureActions():
     # CreatureList = sorted(CreatureList, key=lambda item: item.id)  # is this actually necessary or wanted
     for i in range(CreatureList.__len__()):
-        CreatureList[i].move(random.randint(0, 4), CreatureList, Map)
+        CreatureList[i].move(random.randint(0, 4), Map)
         Map[CreatureList[i].position_x][CreatureList[i].position_y] = CreatureList[i]
 
 
