@@ -8,12 +8,16 @@ from class1 import Creature
 # Random doesn't want to work, no idea what is wrong, it worked on the monopoly one:
 # My dumb ass was adding onto the list, but displaying only the first generation
 # so great, made my first memory leak...
-MapDimensions = 15
+MapDimensions = 10
 Map = [[None for col in range(MapDimensions)] for row in range(MapDimensions)]
 CreatureList = []
 # CURRENT   Implement new features - predators eating prey, prey eating plants, plants randomly spawning
 # PRIORITY  or rework some old stuff
 # Potential methods - divide predators and prey into subclasses of Creature
+
+# BUG Found - Creatures have always very specific coordinates at the beginning of the simulation
+# reconsider first map generation - picking creatures coordinates might be better to be done elsewhere
+# what - GenerateFirstMapGeneration - does this even do anything
 
 clearConsole = lambda: print('\n' * 150)
 
@@ -59,9 +63,9 @@ def UpdateMap():
 
 
 def DisplayMap():
-    for col in range(MapDimensions):
+    for col in range(len(Map)):
         print(f"{col}", end=" ")
-        for row in range(MapDimensions):
+        for row in range(len(Map[col])):
             # Big problem/security flaw here. What if the error will be a valid one?
             # Re-do this with a check that bools only when it is a creature type | in not None might just work
             try:
