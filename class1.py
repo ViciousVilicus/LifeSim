@@ -8,6 +8,7 @@ class Creature:
         self.creature_id = int(creature_id)
         self.position_x = 0
         self.position_y = 0
+        self.dead = False
         if creature_type == "Prey":
             self.speed = 1
         elif creature_type == "Predator":
@@ -92,6 +93,7 @@ class Pray(Creature):
         if Map[landing_x][landing_y].creature_type in Pray.consumables_list:
             # del CreatureList[CreatureList.index(Map[landing_x][landing_y])] overcomplicated and dumb
             CreatureList.remove(Map[landing_x][landing_y])  # <-- PROBABLE CAUSE OF THE PROBLEM
+            #CreatureList(CreatureList.index(Map[landing_x][landing_y])).dead = True
 
 
 class Predator(Creature):
