@@ -3,14 +3,10 @@ import time
 
 from class1 import Creature, Pray, Predator, Plant
 
-# Proper clear doesn't want to work, used the 'print a lot of lines' solution:
-# Works but meh, on a bigger map it will be better
-# Random doesn't want to work, no idea what is wrong, it worked on the monopoly one:
-# My dumb ass was adding onto the list, but displaying only the first generation
-# so great, made my first memory leak...
-MapDimensions = 3
+MapDimensions = 20
 Map = [[None for col in range(MapDimensions)] for row in range(MapDimensions)]
 CreatureList = []
+#TODO
 # CURRENT   Implement new features - predators eating prey, prey eating plants, plants randomly spawning
 # PRIORITY  or rework some old stuff
 # Potential methods - divide predators and prey into subclasses of Creature
@@ -51,7 +47,8 @@ def UpdateMap():
 # noinspection PyUnresolvedReferences
 def DisplayMap():
     for col in range(len(Map)):
-        print(f"{col}", end=" ")
+        if MapDimensions <= 10:
+            print(f"{col}", end=" ")
         for row in range(len(Map[col])):
             # Big problem/security flaw here. What if the error will be a valid one?
             # Re-do this with a check that bools only when it is a creature type | in not None might just work
@@ -102,7 +99,8 @@ def GenerateCreatures(creature_id):
     for i in range(CreatureList.__len__()):
         while True:
             CreatureList[i].position_x = random.randint(0, MapDimensions-1)
-            CreatureList[i].position_y = random.randint(0, MapDimensions-1)  # do it using the creature position instead of map field
+            CreatureList[i].position_y = random.randint(0, MapDimensions-1)
+            # do it using the creature position instead of map field
 
             # If it is something else than a None field, aka creature
             # re-roll positions, if not break and put it on the map
@@ -115,23 +113,28 @@ def GenerateCreatures(creature_id):
 
 
 def CreatureActions():
-    # CreatureList = sorted(CreatureList, key=lambda item: item.id)  # is this actually necessary or wanted
-    for i in range(CreatureList.__len__()):
-        if CreatureList[i].creature_type is not "Plant":
-            CreatureList[i].move(random.randint(0, 4), Map, CreatureList)
-        # don't know if this should be included
-        Map[CreatureList[i].position_x][CreatureList[i].position_y] = CreatureList[i]
+    for creature in CreatureList:
+        if creature.creature_type != "Plant":
+            creature.move(random.randint(0, 4), Map, CreatureList)
+        Map[creature.position_x][creature.position_y] = creature
 
 
 def EndPrint(generation):
-    string = "  "
-    bridge_line = ""
-    for i in range(Map.__len__()):
-        string = string + str(i) + " "
-        bridge_line = "_"*string.__len__()
-    print(bridge_line)
-    print(generation)
-    print(string)
+    # if map is larger than 10 then don't bother incrementing
+    if 10 <= Map.__len__():
+        bridge_line = "___"
+        bridge_line = bridge_line + "__" * MapDimensions
+        print(bridge_line)
+        print(generation)
+    else:
+        string = "  "
+        bridge_line = ""
+        for i in range(Map.__len__()):
+            string = string + str(i) + " "
+            bridge_line = "_"*string.__len__()
+        print(bridge_line)
+        print(generation)
+        print(string)
 
 # how it works
 # do a list of object creatures

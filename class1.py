@@ -8,7 +8,6 @@ class Creature:
         self.creature_id = int(creature_id)
         self.position_x = 0
         self.position_y = 0
-        self.dead = False
         if creature_type == "Prey":
             self.speed = 1
         elif creature_type == "Predator":
@@ -64,7 +63,8 @@ class Creature:
                             # if all possible random numbers were tried, return from pick_a_spot with position_taken
                             if direction_list.__len__() == 4:
                                 return (True,)
-
+                    else:
+                        return False, direction
                     continue  # comprehend this continue, when and what purpose it fulfills
                 else:
                     return False, direction
@@ -85,26 +85,28 @@ class Creature:
         self.position_y = self.position_y % Map.__len__()
 
 
+# Based of Predator
 class Pray(Creature):
     consumables_list = ["Plant"]
 
+    # Check if creature is allowed to eat target other creature type
     def consume(self, Map, CreatureList, landing_x, landing_y):
-        #  if Map[landing_x][landing_y] is not None:  I don't think this check is necessary
         if Map[landing_x][landing_y].creature_type in Pray.consumables_list:
-            # del CreatureList[CreatureList.index(Map[landing_x][landing_y])] overcomplicated and dumb
-            CreatureList.remove(Map[landing_x][landing_y])  # <-- PROBABLE CAUSE OF THE PROBLEM
-            # CreatureList(CreatureList.index(Map[landing_x][landing_y])).dead = True
+            CreatureList.remove(Map[landing_x][landing_y])  # remove that creature from existence
+            return True  # T or F if the spot was freed
+        return False
 
 
+# Based of Pray
 class Predator(Creature):
-    consumables_list = ["Pray"]
+    consumables_list = ["Prey"]
 
+    # Check if creature is allowed to eat target other creature type
     def consume(self, Map, CreatureList, landing_x, landing_y):
         if Map[landing_x][landing_y].creature_type in Predator.consumables_list:
-            CreatureList.remove(Map[landing_x][landing_y])
-            return True
-        else:
-            return False
+            CreatureList.remove(Map[landing_x][landing_y])  # remove that creature from existence
+            return True  # T or F if the spot was freed
+        return False
 
 
 class Plant(Creature):  # Bear with me
