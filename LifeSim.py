@@ -3,7 +3,7 @@ import time
 
 from class1 import Creature, Pray, Predator, Plant
 
-MapDimensions = 20
+MapDimensions = 10
 Map = [[None for col in range(MapDimensions)] for row in range(MapDimensions)]
 CreatureList = []
 #TODO
@@ -22,6 +22,7 @@ clearConsole = lambda: print('\n' * 150)
 # do this ^^^^
 
 
+# UNUSED/USELESS
 def GenerateFirstMapGeneration():
     # why is this 'if' here? what scenario does it cover?
     # after 2 weeks I remember, this clears the map beforehand so there won't be a memory leak
@@ -113,6 +114,7 @@ def GenerateCreatures(creature_id):
 
 
 def CreatureActions():
+    # iterated from last/or not?
     for creature in CreatureList:
         if creature.creature_type != "Plant":
             creature.move(random.randint(0, 4), Map, CreatureList)
@@ -121,7 +123,7 @@ def CreatureActions():
 
 def EndPrint(generation):
     # if map is larger than 10 then don't bother incrementing
-    if 10 <= Map.__len__():
+    if 10 < Map.__len__():
         bridge_line = "___"
         bridge_line = bridge_line + "__" * MapDimensions
         print(bridge_line)

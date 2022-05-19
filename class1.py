@@ -104,7 +104,12 @@ class Predator(Creature):
     # Check if creature is allowed to eat target other creature type
     def consume(self, Map, CreatureList, landing_x, landing_y):
         if Map[landing_x][landing_y].creature_type in Predator.consumables_list:
-            CreatureList.remove(Map[landing_x][landing_y])  # remove that creature from existence
+            # Unknown cause of error: Predator attempts to remove a Prey that does not exist(somehow) but is on the map
+            # I may have an idea, but I need more time to try that
+            try:
+                CreatureList.remove(Map[landing_x][landing_y])  # remove that creature from existence
+            except ValueError:
+                pass
             return True  # T or F if the spot was freed
         return False
 
