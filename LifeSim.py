@@ -1,37 +1,23 @@
 import random
 import time
 
-from class1 import Creature, Pray, Predator, Plant
+from class1 import Creature, Prey, Predator, Plant
 
 MapDimensions = 10
 Map = [[None for col in range(MapDimensions)] for row in range(MapDimensions)]
 CreatureList = []
+overgrowth = True
 #TODO
-# CURRENT   Implement new features - predators eating prey, prey eating plants, plants randomly spawning
-# PRIORITY  or rework some old stuff
-# Potential methods - divide predators and prey into subclasses of Creature
+# CURRENT   plants randomly spawning *, DeathAndDecay *, Overgrowth on/off *
+# PRIORITY  "Rozmnazanie"
 
-# FIXED
-# BUG Found - Creatures have always very specific coordinates at the beginning of the simulation
-# reconsider first map generation - picking creatures coordinates might be better to be done elsewhere
-# what - GenerateFirstMapGeneration - does this even do anything
-
-clearConsole = lambda: print('\n' * 150)
+# done: allow for change of MapDimensions by user,
+cls_cleanup = lambda: print('\n' * 150)
 
 # https://stackoverflow.com/questions/19326004/access-a-function-variable-outside-the-function-without-using-global
 # do this ^^^^
 
-
-# UNUSED/USELESS
-def GenerateFirstMapGeneration():
-    # why is this 'if' here? what scenario does it cover?
-    # after 2 weeks I remember, this clears the map beforehand so there won't be a memory leak
-    global Map
-
-    if Map.__len__ != 0:
-        Map.clear()
-        Map = [[None for col in range(MapDimensions)] for row in range(MapDimensions)]
-        # this may not be necessary if I will make this solely for the first map generation
+# WARNING, ID COUNTING IS OBSOLETE
 
 
 def UpdateMap():
@@ -60,6 +46,8 @@ def DisplayMap():
                     print("Z", end=" ")
                 elif Map[col][row].creature_type == "Plant":
                     print("P", end=" ")
+                elif Map[col][row].creature_type == "Corpse":
+                    print("")
                 else:
                     print("?", end=" ")
             elif Map[col][row] is None:
@@ -69,31 +57,27 @@ def DisplayMap():
         print()
 
 
-def GenerateCreatures(creature_id):
+def GenerateCreatures():
     while True:
-        pray_amount = int(input("Amount of pray? "))
+        prey_amount = int(input("Amount of prey? "))
         predator_amount = int(input("Amount of predators? "))
         # safety check so the map will not be over 100% of the amount of map tiles
-        plant_amount = pray_amount  # for now 1 to 1 ratio
-        if pray_amount + predator_amount + plant_amount > MapDimensions * MapDimensions:
+        plant_amount = prey_amount  # for now 1 to 1 ratio
+        if prey_amount + predator_amount + plant_amount > MapDimensions * MapDimensions:
             print("Too many creatures")
             continue
-        if pray_amount > 0 or predator_amount > 0:
-            print(f"{pray_amount + predator_amount + plant_amount} Objects to be initialised")
+        if prey_amount > 0 or predator_amount > 0:
+            print(f"{prey_amount + predator_amount + plant_amount} Objects to be initialised")
             break
-    GenerateCreatures.CreatureId = creature_id
 
-    for i in range(pray_amount):
-        CreatureList.append(Pray("Prey", False, GenerateCreatures.CreatureId))
-        GenerateCreatures.CreatureId += 1
+    for i in range(prey_amount):
+        CreatureList.append(Prey("Prey"))
 
     for i in range(predator_amount):
-        CreatureList.append(Predator("Predator", False, GenerateCreatures.CreatureId))
-        GenerateCreatures.CreatureId += 1
+        CreatureList.append(Predator("Predator"))
 
     for i in range(plant_amount):
-        CreatureList.append(Plant("Plant", False, GenerateCreatures.CreatureId))
-        GenerateCreatures.CreatureId += 1
+        CreatureList.append(Plant("Plant"))
 
     global Map
 
@@ -112,16 +96,65 @@ def GenerateCreatures(creature_id):
             # ^ why did I implement this twice, but in a different way?
         Map[CreatureList[i].position_x][CreatureList[i].position_y] = CreatureList[i]
 
+    global overgrowth
+    YNbool = str(input(f'Overgrowth [y/n] '))
+
+    if YNbool == 'y' or YNbool == 'Y' or YNbool == 'yes':
+        overgrowth = True
+    elif YNbool == 'n' or YNbool == 'N' or YNbool == 'no':
+        overgrowth = False
+
+
+def TeamTrees():
+    global CreatureList
+    plant_amount = 0
+    plant_list = []
+    for element in CreatureList:
+        if element.creature_type == "Plant":
+            plant_amount += 1
+            plant_list.append(element)
+
+    # Not a serious bug here, sometimes one plant is not counted
+
+    # add new plants # might wanna do a check if the plant amount is too low
+    for i in range(int(plant_amount/2)):
+        CreatureList.append(Plant("Plant"))
+        plant_list.append(CreatureList[-1])
+
+    # Randomly Replant Plants
+    # Plant already planted plants and plant new plants in random coordinates.
+    # Do not retry if failed to plant new plants
+    for i in range(plant_list.__len__()):
+        # If plant has default init position, give them new
+        if plant_list[i].position_x == -1 or plant_list[i].position_y == -1:
+            plant_list[i].position_x = random.randint(0, MapDimensions-1)
+            plant_list[i].position_y = random.randint(0, MapDimensions-1)
+
+        # if not field_free or field_not_taken_by_self
+        if Map[plant_list[i].position_x][plant_list[i].position_y] is not None \
+                and Map[plant_list[i].position_x][plant_list[i].position_y] is not plant_list[i]:
+            continue
+        else:
+            CreatureList[CreatureList.index(plant_list[i])] = plant_list[i]
+
 
 def CreatureActions():
-    # iterated from last/or not?
+    # Iterate through every creature that is NOT a plant - use move action
     for creature in CreatureList:
-        if creature.creature_type != "Plant":
+        if creature.creature_type != "Plant" and creature.creature_type != "Corpse":
             creature.move(random.randint(0, 4), Map, CreatureList)
-        Map[creature.position_x][creature.position_y] = creature
+        Map[creature.position_x][creature.position_y] = creature  # Place that creature on the map // TEST W/O THIS
+    # after all moves are done, use DeathAndDecay
+    for creature in CreatureList:
+        if overgrowth:
+            if creature.creature_type != "Plant":  # Plants do not decay (TODO) if overgrowth is true
+                creature.death_and_decay(CreatureList, Map, MapDimensions)  # Death and decay
+        else:
+            creature.death_and_decay(CreatureList, Map, MapDimensions)
 
 
 def EndPrint(generation):
+    # EndPrint is for decorative purposes
     # if map is larger than 10 then don't bother incrementing
     if 10 < Map.__len__():
         bridge_line = "___"
@@ -138,6 +171,44 @@ def EndPrint(generation):
         print(generation)
         print(string)
 
+
+def clear_console():
+    cls_bool = str(input("Clear console after a generation? [y/n]"))
+    if cls_bool == 'y' or cls_bool == 'Y' or cls_bool == 'yes':
+        cls_bool = True
+        print(f'Clear_console: {cls_bool}')
+    elif cls_bool == 'n' or cls_bool == 'N' or cls_bool == 'no':
+        cls_bool = False
+        print(f'Clear_console: {cls_bool}')
+    else:
+        cls_bool = False
+        print(f'Unrecognised answer, now using default')
+        print(f'Clear_console: {cls_bool}')
+    return cls_bool
+
+
+def select_MapDimensions():
+    global MapDimensions
+    global Map
+    while True:
+        MapDimensions = int(input("Map dimensions (a^2): "))
+        print(f'Number of fields: {MapDimensions * MapDimensions}')
+        YNbool = str(input("Confirm [y/n] "))
+        if YNbool == 'y' or YNbool == 'Y' or YNbool == 'yes':
+            Map = [[None for col in range(MapDimensions)] for row in range(MapDimensions)]
+            return
+
+
+def EndSimulationCheck():
+    if len(CreatureList) >= MapDimensions*MapDimensions:
+        print("Overpopulation, stopping simulation")
+        raise Exception("Overpopulation, stopping simulation")
+    elif len(CreatureList) == 0:
+        print("No life remaining, stopping simulation")
+        raise Exception("No life remaining, stopping simulation")
+    else:
+        return
+
 # how it works
 # do a list of object creatures
 # put them on the map
@@ -153,17 +224,19 @@ def EndPrint(generation):
 test_iterator = 0
 CreatureIdOuter = 0
 
-# GenerateFirstMapGeneration()
-GenerateCreatures(CreatureIdOuter)  # generate creatures before going into the game loop
+select_MapDimensions()
+GenerateCreatures()  # generate creatures before going into the game loop
+clear_console = clear_console()  # synonyms not found
+print("X-Prey, Z-Predator, P-Plant, C-Corpse")
+time.sleep(5)
 while True:
     test_iterator += 1
-    # CreatureIdOuter = GenerateCreatures.CreatureId  # gets out the creature id from the function
-    # GenerateCreatures.CreatureId = GenerateCreatures.CreatureId + 100
-    # ^THIS works, but does it work how I think it works?
-    # GenerateCreatures(GenerateCreatures.CreatureId)
     CreatureActions()
+    TeamTrees()
     UpdateMap()
     DisplayMap()
     time.sleep(1)
+    EndSimulationCheck()
     EndPrint(test_iterator)
-    # clearConsole()
+    if clear_console:
+        cls_cleanup()
