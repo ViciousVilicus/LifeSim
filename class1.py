@@ -2,23 +2,28 @@ import random
 
 
 class Creature:
-    def __init__(self, creature_type, fed, creature_id):
+    starvationMAX = 6  # maximum amount of time before starvation
+
+    def __init__(self, creature_type):
         self.creature_type = creature_type
-        self.fed = bool(fed)
-        self.creature_id = int(creature_id)
-        self.position_x = 0
-        self.position_y = 0
+        self.fed = True
+        self.starvation = Creature.starvationMAX
+        self.position_x = -1
+        self.position_y = -1
         if creature_type == "Prey":
             self.speed = 1
         elif creature_type == "Predator":
             self.speed = 1  # 2 for later, when I will be able to implement it
         else:
-            self.speed = 0  # cause plants
+            self.speed = 0  # cause plants and corpses
 
     consumables_list = []
 
+    def reproduce(self, CreatureList, Map, MapDimensions):
+        raise Exception("Creature has to have a subtype for this method to work")
+
     def consume(self, Map, CreatureList, landing_x, landing_y):
-        raise Exception("Creature has to have a subtype to work")
+        raise Exception("Creature has to have a subtype for this method to work")
 
     def move(self, direction, Map, CreatureList):
         # 0 north, 1 east, 2 south, 3 west, 4 do not move
@@ -26,8 +31,8 @@ class Creature:
             return
 
         def pick_a_spot(direction):
-
             direction_list = [direction]
+
             while True:
                 # select wanted coordinates || REMEMBER !! wanted coordinates DO NOT BECOME actual coordinates !!
                 if direction == 0:
@@ -84,20 +89,47 @@ class Creature:
         self.position_x = self.position_x % Map.__len__()
         self.position_y = self.position_y % Map.__len__()
 
+    def death_and_decay(self, CreatureList, Map, MapDimensions):
+        # Death and decay is a timer before eventual death
+        if self.fed:
+            self.starvation = Creature.starvationMAX
+            self.fed = False
+            # TODO self.reproduce(CreatureList, Map, MapDimensions)
+        else:
+            if self.starvation <= 0:
+                CreatureList.remove(self)  # will this work?  # Creature dies
+            else:
+                self.starvation -= 1
+
 
 # Based of Predator
-class Pray(Creature):
+class Prey(Creature):
     consumables_list = ["Plant"]
 
     # Check if creature is allowed to eat target other creature type
     def consume(self, Map, CreatureList, landing_x, landing_y):
-        if Map[landing_x][landing_y].creature_type in Pray.consumables_list:
+        if Map[landing_x][landing_y].creature_type in Prey.consumables_list:
             CreatureList.remove(Map[landing_x][landing_y])  # remove that creature from existence
+            self.fed = True
             return True  # T or F if the spot was freed
         return False
 
+    def reproduce(self, CreatureList, Map, MapDimensions):
+        if self.starvation > Creature.starvationMAX / 2:
+            if len(CreatureList) >= MapDimensions * MapDimensions:
+                CreatureList.append(Prey("Prey"))
+                while True:
+                    CreatureList[-1].position_x = random.randint(0, MapDimensions - 1)
+                    CreatureList[-1].position_y = random.randint(0, MapDimensions - 1)
 
-# Based of Pray
+                    # if not field_free or field_not_taken_by_self
+                    if Map[CreatureList[-1].position_x][CreatureList[-1].position_y] is not None:
+                        continue
+                    else:
+                        return
+
+
+# Based of Prey
 class Predator(Creature):
     consumables_list = ["Prey"]
 
@@ -108,13 +140,44 @@ class Predator(Creature):
             # I may have an idea, but I need more time to try that
             try:
                 CreatureList.remove(Map[landing_x][landing_y])  # remove that creature from existence
+                # if it was real, then
+                self.fed = True
             except ValueError:
                 pass
             return True  # T or F if the spot was freed
         return False
+
+    def reproduce(self, CreatureList, Map, MapDimensions):
+        if self.starvation > Creature.starvationMAX / 2:
+            if len(CreatureList) >= MapDimensions*MapDimensions:
+                CreatureList.append(Predator("Predator"))
+                while True:
+                    CreatureList[-1].position_x = random.randint(0, MapDimensions - 1)
+                    CreatureList[-1].position_y = random.randint(0, MapDimensions - 1)
+
+                    # if not field_free or field_not_taken_by_self
+                    if Map[CreatureList[-1].position_x][CreatureList[-1].position_y] is not None:
+                        continue
+                    else:
+                        return
 
 
 class Plant(Creature):  # Bear with me
     # this should be a 'vegetable' aka exist, do nothing and not decide to stop existing by itself
     def move(self, direction, Map, CreatureList):
         raise Exception("A Plant cannot move")
+
+    def reproduce(self, CreatureList, Map, MapDimensions):
+        pass
+
+    def death_and_decay(self, CreatureList, Map, MapDimensions):
+        # Death and decay is a timer before eventual death
+        if self.starvation <= 0:
+            CreatureList.remove(self)  # will this work?  # Creature dies
+        else:
+            self.starvation -= 2
+
+
+class Corpse(Creature):  # Copy of plant
+    def move(self, direction, Map, CreatureList):
+        raise Exception("A Corpse cannot move")
